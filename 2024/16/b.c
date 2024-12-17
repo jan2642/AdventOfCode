@@ -77,7 +77,7 @@ uint32_t run_bfs(char * buf, uint32_t * scores, int w, int h, int x, int y, int 
             x = q->x + directions[i][0];
             y = q->y + directions[i][1];
 
-            if (pos(x, y) != '#') {
+            if (pos(x, y) != '#') { /* Skip walls */
                 if (q->dir == i) /* Same direction, step */
                     add_tail(i, x, y, q->score + 1);
                 else /* Other direction, turn */
@@ -132,10 +132,10 @@ uint32_t run_bfs_2(char * buf, uint32_t * scores, int w, int h, int x, int y)
             x = q->x + directions[back[i]][0];
             y = q->y + directions[back[i]][1];
 
-            if (pos(x, y) != '#') {
+            if (pos(x, y) != '#' && pos(x, y) != 'O') { /* Skip walls & previously visited */
                 if (q->dir == i) /* Step (backwards) */
                     add_tail(i, x, y, q->score - 1);
-                else
+                else             /* Turn */
                     add_tail(i, q->x, q->y, q->score - 1000);
             }
         }
@@ -183,9 +183,13 @@ int main(int argc, char ** argv)
     uint32_t tiles = run_bfs_2(buf, scores, w, h, ex, ey);
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            printf("%c", pos(x, y));
+            switch (pos(x,y)) {
+                case 'O': printf("\033[33;1mO"); break;
+                case '#': printf("\033[0;34m#"); break;
+                case '.': printf("\033[31;1m."); break;
+            }
         }
-        printf("\n");
+        printf("\033[0m\n");
     }
 
     printf("Part 1: Score: %u\n", score);

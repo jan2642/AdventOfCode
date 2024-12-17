@@ -136,8 +136,14 @@ int main(int argc, char ** argv)
     /* Print map */
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++)
-            printf("%c", pos(x, y));
-        printf("\n");
+            switch (pos(x,y)) {
+                case '[': printf("\033[33;1m["); break;
+                case ']': printf("\033[33;1m]"); break;
+                case '#': printf("\033[0;34m#"); break;
+                case '.': printf("\033[31;1m."); break;
+                case '@': printf("\033[32;1m@"); break;
+            }
+        printf("\033[0m\n");
     }
 
     uint64_t total = 0;

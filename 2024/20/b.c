@@ -86,46 +86,8 @@ static int run_bfs(char * buf, int * steps, int w, int h, int x, int y)
     return max_steps;
 }
 
-
-static int run_bfs_2(char * buf, int * steps, int * shortcuts, int w, int h, int sx, int sy, int depth)
-{
-    add_tail(sx, sy, 0); /* Add the start position to the queue */
-
-    queue * q;
-    while ((q = pop_head())) {
-        if (pos(q->x, q->y) == '@') { /* Already visited */
-            free(q);
-            continue;
-        }
-
-        if ((pos(q->x, q->y) == '.' || pos(q->x, q->y) == 'E')) /* Hit path, account time saved */
-            if (step(q->x, q->y) > step(sx, sy)) /* Only shortcut forward */
-                shortcuts[step(q->x, q->y) - step(sx, sy) - q->steps]++;
-
-        pos(q->x, q->y) = '@'; /* Mark visited */
-
-        if (q->steps == depth) { /* Too far */
-            free(q);
-            continue;
-        }
-
-        /* Look in every direction */
-        for (int i = 0; i < 4; i++) {
-            int x = q->x + directions[i][0];
-            int y = q->y + directions[i][1];
-
-            if (x < 0 || y < 0 || x >= w || y >= h) /* Out of bounds */
-                continue;
-           
-            if (pos(x, y) != '@')     
-                add_tail(x, y, q->steps + 1);
-        }
-
-        free(q);
-    }
-    
-    return 0;
-}
+static int min(int a, int b) { return a < b ? a : b; }
+static int max(int a, int b) { return a > b ? a : b; }
 
 int main(int argc, char ** argv)
 {
@@ -161,17 +123,22 @@ int main(int argc, char ** argv)
     memset(steps, 0xff, w * h * sizeof(int)); /* Initialize at -1 */
     int max_steps = run_bfs(buf, steps, w, h, sx, sy);
 
-    /* Then search shortcuts starting from every position on the path */
+    /* Then search for shortcuts around every position on the path */
     int *shortcuts = calloc(max_steps, sizeof(int));
-    char *buf2 = calloc(w * h, 1);
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            if (pos(x, y) == '.' || pos(x, y) == 'S') { 
-                memcpy(buf2, buf, w * h);
-                run_bfs_2(buf2, steps, shortcuts, w, h, x, y, 20);
-            }
-        }
-    }
+    int depth = 20;
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+            if (pos(x, y) == '.' || pos(x, y) == 'S')
+                /* Search for a max manhattan distance of 'depth' */
+                for (int dx = max(x - depth, 0); dx <= min(x + depth, w - 1); dx++) {
+                    int dist_x = abs(x - dx);
+                    for (int dy = max(y - (depth - dist_x), 0); dy <= min(y + (depth - dist_x), h - 1); dy++) {
+                        int distance = dist_x + abs(y - dy); /* Manhattan distance */
+                        if ((pos(dx, dy) == '.' || pos(dx, dy) == 'E')) /* Hit path, account time saved */
+                            if (step(dx, dy) > step(x, y)) /* Only shortcut forward */
+                                shortcuts[step(dx, dy) - step(x, y) - distance]++;
+                    }
+                }
 
     int total = 0;
     for (int i = 0; i < max_steps; i++) {
